@@ -112,3 +112,100 @@ where (total_record % 2 = 0 and rn between total_record / 2 and (total_record /2
 SELECT *
 FROM cte1
 WHERE rn IN ( (cnt + 1) / 2, (cnt + 2) / 2 ); -- so if count is 5 then  7/3 = 3 and 6/3 = 3 
+
+
+------------------------------------------------------------------------------------------------------------------
+-- LeetCode Hard 2004 "Number of Seniors and Juniors"
+
+CREATE TABLE Candidates (
+    employee_id INT PRIMARY KEY,
+    experience VARCHAR(10),   -- 'Senior' or 'Junior'
+    salary INT
+);
+
+INSERT INTO Candidates (employee_id, experience, salary) VALUES
+(1, 'Senior', 20000),
+(2, 'Senior', 20000),
+(3, 'Senior', 50000),
+(4, 'Junior', 40000),
+(5, 'Junior', 10000),
+(6, 'Junior', 15000);
+
+/*
+You have a budget of 70,000.
+Hiring rules:
+Hire as many Seniors as possible first (lowest salary first)
+With the remaining budget, hire as many Juniors as possible
+Return how many Seniors and Juniors are hired  */
+
+WITH CTE1 AS (
+select * ,
+sum(salary) over(order by salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) RK
+from Candidates
+where experience  = 'Senior' )
+,CTE2 AS (
+SELECT COUNT(employee_id) Senior_count, MAX(RK) max_salary
+FROM CTE1
+WHERE RK <= 70000)
+,CTE3 AS (
+select * ,
+sum(salary) over(order by salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) RK
+from Candidates
+where experience  = 'Junior' )
+, CTE4 AS (
+SELECT COUNT(employee_id) junior_count
+FROM CTE3
+WHERE RK <= (70000 - (SELECT max_salary FROM CTE2 )))
+SELECT Senior_count, 'Senior' FROM CTE2
+union 
+select junior_count , 'Junior' from CTE4
+
+------------------------------------------------------------------------------------------------------------------
+
+--  Detect users whose values are strictly increasing over time
+CREATE TABLE user_metrics (
+    user_id INT,
+    activity_date DATE,
+    value INT
+);
+
+INSERT INTO user_metrics (user_id, activity_date, value) VALUES
+(1, '2024-01-01', 10),
+(1, '2024-01-02', 20),
+(1, '2024-01-03', 30),
+(2, '2024-01-01', 10),
+(2, '2024-01-02', 8),
+(2, '2024-01-03', 15),
+(3, '2024-01-01', 10);
+
+INSERT INTO user_metrics (user_id, activity_date, value) VALUES
+(4, '2024-01-01', -20),
+(4, '2024-01-02', -10),
+(4, '2024-01-03', 10);
+
+select * from user_metrics;
+
+-- in this query if first value is negative then -20-0 is (-20) and even then next number in increasing order it will not give the 
+-- user_id as (lag_value < 0) fail
+with cte1 as (
+select user_id
+, value - lag(value, 1, 0) over(partition by user_id order by activity_date) lag_value
+from user_metrics )
+select distinct  user_id
+from cte1  c1
+where not exists (select * from cte1 c2 where c1.user_id = c2.user_id and lag_value < 0)
+
+with cte1 as (
+select user_id,
+value , lag(value) over(partition by user_id order by activity_date),
+case 
+when value > lag(value) over(partition by user_id order by activity_date) then 0
+else 1 end
+from user_metrics )
+select distinct  user_id
+from cte1  c1
+where 
+
+-----------------------------------------------------------------------------------------------
+
+-- LeetCode Hard 2199 Facebook “Finding the Topic of Each Post"
