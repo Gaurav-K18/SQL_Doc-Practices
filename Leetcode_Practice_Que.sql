@@ -195,17 +195,237 @@ select distinct  user_id
 from cte1  c1
 where not exists (select * from cte1 c2 where c1.user_id = c2.user_id and lag_value < 0)
 
+-- final query
 with cte1 as (
 select user_id,
-value , lag(value) over(partition by user_id order by activity_date),
+value , lag(value) over(partition by user_id order by activity_date) lag_value,
 case 
+when lag(value) over(partition by user_id order by activity_date) is null then 0 
 when value > lag(value) over(partition by user_id order by activity_date) then 0
-else 1 end
+else 1 end flag
 from user_metrics )
-select distinct  user_id
+select   user_id
 from cte1  c1
-where 
+group by user_id
+having max(flag) <> 1
+and count(*) > 1  -- exclude if you have only one record
 
 -----------------------------------------------------------------------------------------------
 
 -- LeetCode Hard 2199 Facebook “Finding the Topic of Each Post"
+
+CREATE TABLE Topics (
+    topic_id INT ,
+    word VARCHAR(50)
+);
+
+CREATE TABLE Posts (
+    post_id INT PRIMARY KEY,
+    content VARCHAR(255)
+);
+
+INSERT INTO Topics (topic_id, word) VALUES
+(1, 'education'),
+(1, 'student'),
+(2, 'science'),
+(2, 'research'),
+(3, 'sports'),
+(3, 'football'),
+(4, 'technology'),
+(4, 'ai');
+
+INSERT INTO Posts (post_id, content) VALUES
+(1, 'AI is transforming technology and science'),
+(2, 'Football is the most popular sport'),
+(3, 'Education is important for every student'),
+(4, 'Scientific research drives innovation'),
+(5, 'This post has no matching topic');
+
+INSERT INTO Posts (post_id, content) VALUES
+(6, 'ronaldo is greate footboaller');
+
+INSERT INTO Posts (post_id, content) VALUES
+(7, 'ronaldo is greate footballer');
+
+select * from Topics
+select * from Posts;
+-- concat('% ',t.word, ' %') :- added space before and after so that footballer should not match
+-- concat(' ',p.content,' ') :- added space before and after so that if the starting or ending word is in topic table
+
+with cte1 as (
+select distinct p.post_id,t.topic_id
+from Topics t
+right join Posts p on concat(' ',p.content,' ') like concat('% ',t.word, ' %')  -- added space before and after so that footballer should not match
+)
+select post_id, isnull(string_agg(topic_id,','), 'ambigious')
+from cte1 
+group by post_id;
+
+-----------------------------------------------------------------------------------------------
+--  YAHOO LeetCode Hard 1412 “Quiet Students in All Exams"
+/* 
+Never got the highest score
+Never got the lowest score
+in any exam they appeared in */
+
+CREATE TABLE Student (
+    student_id INT PRIMARY KEY,
+    student_name VARCHAR(50)
+);
+
+CREATE TABLE Exam (
+    exam_id INT,
+    student_id INT,
+    score INT,
+    PRIMARY KEY (exam_id, student_id)
+);
+
+INSERT INTO Student (student_id, student_name) VALUES
+(1, 'Daniel'),
+(2, 'Jade'),
+(3, 'Stella'),
+(4, 'Jonathan'),
+(5, 'Will');
+
+INSERT INTO Exam (exam_id, student_id, score) VALUES
+(10, 1, 70),
+(10, 2, 80),
+(10, 3, 90),
+(20, 1, 80),
+(20, 2, 70),
+(20, 4, 90),
+(30, 1, 90),
+(30, 3, 80),
+(30, 5, 70);
+
+INSERT INTO Student (student_id, student_name) VALUES
+(7, 'pranay')
+
+INSERT INTO Exam (exam_id, student_id, score) VALUES
+(10, 6, 80),
+(20, 6, 80),
+(30, 6, 80)
+
+select * from Student;
+select * from Exam;
+
+with cte1 as (
+    SELECT
+        exam_id,
+        student_id,
+        score,
+        MIN(score) OVER (PARTITION BY exam_id) AS min_score,
+        MAX(score) OVER (PARTITION BY exam_id) AS max_score
+    FROM Exam)
+-- get all the student who got the lowest or highest marks at least once
+,cte2 as (
+select distinct student_id
+from cte1
+where score = min_score or score = max_score)
+select distinct s.student_id, student_name
+from Student s 
+join Exam e on s.student_id = e.student_id  -- join so that only get the stude
+where s.student_id not in  (select student_id from cte2); -- exclude that student
+
+WITH ranked AS (
+    SELECT
+        exam_id,
+        student_id,
+        score,
+        MIN(score) OVER (PARTITION BY exam_id) AS min_score,
+        MAX(score) OVER (PARTITION BY exam_id) AS max_score
+    FROM Exam
+)
+SELECT r.exam_id,
+    s.student_id,
+    s.student_name, r.student_id, r.score, r.min_score, r.max_score
+FROM Student s
+JOIN Exam e
+  ON s.student_id = e.student_id
+left JOIN ranked r
+  ON s.student_id = r.student_id
+ AND (r.score = r.min_score OR r.score = r.max_score)
+WHERE r.student_id IS NULL
+GROUP BY s.student_id, s.student_name
+ORDER BY s.student_id;
+
+
+-------------------------------------------------------------------------------------------------------------
+
+-- LeetCode Hard 2362 “Generate the Invoice"
+Create table  Products (product_id int, price int)
+Create table  Purchases (invoice_id int, product_id int, quantity int)
+
+insert into Products (product_id, price) values ('1', '100')
+insert into Products (product_id, price) values ('2', '200')
+
+insert into Purchases (invoice_id, product_id, quantity) values ('1', '1', '2')
+insert into Purchases (invoice_id, product_id, quantity) values ('3', '2', '1')
+insert into Purchases (invoice_id, product_id, quantity) values ('2', '2', '3')
+insert into Purchases (invoice_id, product_id, quantity) values ('2', '1', '4')
+insert into Purchases (invoice_id, product_id, quantity) values ('4', '1', '10')
+
+/* 
+Total price of an invoice = sum of (quantity × price) for all products in that invoice.
+If two or more invoices tie for the highest price, return the one with the smallest invoice_id. 
+*/
+
+select * from  Products 
+select * from  Purchases;
+
+-- my query
+with cte1 as (
+select pp.invoice_id , sum(p.price * pp.quantity ) total_price
+from  Products p 
+join Purchases pp on p.product_id = pp.product_id
+group by pp.invoice_id )
+,cte2 as (
+select *, rank() over(order by  total_price desc ,invoice_id ) rk
+from cte1 )
+select p.invoice_id, pp.product_id,  pp.price * p.quantity
+from cte2 
+join Purchases p on cte2.invoice_id = p.invoice_id
+join Products pp on p.product_id = pp.product_id
+where rk = 1;
+
+-- use subquery
+WITH invoice_total AS (
+    SELECT
+        pu.invoice_id,
+        SUM(pr.price * pu.quantity) AS total_price
+    FROM Purchases pu
+    JOIN Products pr
+        ON pu.product_id = pr.product_id
+    GROUP BY pu.invoice_id
+)
+SELECT
+    pu.invoice_id,
+    pu.product_id,
+    pu.quantity * pr.price AS price
+FROM Purchases pu
+JOIN Products pr
+    ON pu.product_id = pr.product_id
+WHERE pu.invoice_id = (
+    SELECT TOP 1 invoice_id
+    FROM invoice_total
+    ORDER BY total_price DESC, invoice_id
+);
+
+-- use top , filer the row using the top 
+with cte1 as (
+SELECT top 1
+    pu.invoice_id,
+    sum(pu.quantity * pr.price) AS price
+FROM Purchases pu
+JOIN Products pr
+ ON pu.product_id = pr.product_id
+ group by   pu.invoice_id 
+ order by  price desc, pu.invoice_id )
+ select p.invoice_id, p.product_id , p.quantity * pp.price 
+ from cte1 c1 
+ join Purchases p on c1.invoice_id = p.invoice_id
+ join Products pp on pp.product_id = p.product_id;
+
+
+------------------------------------------------------------------------------------------------------------------
+
