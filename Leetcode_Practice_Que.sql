@@ -428,4 +428,78 @@ JOIN Products pr
 
 
 ------------------------------------------------------------------------------------------------------------------
+-- GOOGLE LeetCode Hard 1767 “Subtasks That Did Not Execute" Interview SQL Question Explanation | EDS
+Create table  Tasks (task_id int, subtasks_count int)
+Create table  Executed (task_id int, subtask_id int)
+Truncate table Tasks
+insert into Tasks (task_id, subtasks_count) values ('1', '3')
+insert into Tasks (task_id, subtasks_count) values ('2', '2')
+insert into Tasks (task_id, subtasks_count) values ('3', '4')
+Truncate table Executed
+insert into Executed (task_id, subtask_id) values ('1', '2')
+insert into Executed (task_id, subtask_id) values ('3', '1')
+insert into Executed (task_id, subtask_id) values ('3', '2')
+insert into Executed (task_id, subtask_id) values ('3', '3')
+insert into Executed (task_id, subtask_id) values ('3', '4')
+
+-- Find all subtasks that were NOT executed
+select * from Tasks
+select * from Executed;
+
+-- create recursive cte to get genrate the numbers
+with cte1 as (
+select 1 as n , max(subtasks_count) max_count from Tasks
+union all
+select n + 1, max_count
+from cte1
+where n < max_count )
+,cte2 as (
+select * 
+from cte1 t1
+join Tasks t2 on t1.n <= t2.subtasks_count)
+select  t1.task_id, t1.n
+from cte2 t1
+left join Executed t2 on t1.task_id = t2.task_id and t2.subtask_id = t1.n
+where t2.task_id is null
+order by t1.task_id
+
+-- create recursive cte to get genrate the numbers and use not exists to filter the rows 
+with cte1 as (
+select 1 as n , max(subtasks_count) max_count from Tasks
+union all
+select n + 1, max_count
+from cte1
+where n < max_count )
+-- ,cte2 as (
+select t2.task_id , t1.n
+from cte1 t1
+join Tasks t2 on t1.n <= t2.subtasks_count
+where not exists ( select 1  from Executed t3 where t1.n = t3.subtask_id and t2.task_id = t3.task_id)
+order by t2.task_id
+
+-- use the table directly into the recursive CTE
+with cte1 as (
+select task_id, subtasks_count from Tasks
+union all 
+select task_id, subtasks_count - 1 as subtasks_count  -- subtracting 1 to get all the combination
+from cte1
+where subtasks_count > 1)
+select  * 
+from cte1 t1
+where not exists ( select 1  from Executed t3 where t1.subtasks_count = t3.subtask_id and t1.task_id = t3.task_id)
+order by t1.task_id, subtasks_count
+
+
+-- use the table directly but here we are adding the value to generate the series
+with cte1 as (
+select task_id,subtasks_count, 1 as n from Tasks
+union all
+select task_id ,subtasks_count, n  + 1 as n  -- adding 1 to get all combination
+from cte1
+where n < subtasks_count
+)
+select t1.task_id, t1.n 
+from cte1 t1
+where not exists ( select 1  from Executed t3 where t1.n = t3.subtask_id and t1.task_id = t3.task_id)
+order by t1.task_id, subtasks_count
 
