@@ -503,3 +503,38 @@ from cte1 t1
 where not exists ( select 1  from Executed t3 where t1.n = t3.subtask_id and t1.task_id = t3.task_id)
 order by t1.task_id, subtasks_count
 
+-------------------------------------------------------------------------------------------------------------
+-- Leetcode Hard 1225: Find Continuous Dates META Advanced SQL Data Science Interview Question Solved!
+Create table Failed (fail_date date)
+Create table Succeeded (success_date date)
+
+-- Find continuous date ranges where the state is the same.
+insert into Failed (fail_date) values ('2018-12-28')
+insert into Failed (fail_date) values ('2018-12-29')
+insert into Failed (fail_date) values ('2019-01-04')
+insert into Failed (fail_date) values ('2019-01-05')
+
+insert into Succeeded (success_date) values ('2018-12-30')
+insert into Succeeded (success_date) values ('2018-12-31')
+insert into Succeeded (success_date) values ('2019-01-01')
+insert into Succeeded (success_date) values ('2019-01-02')
+insert into Succeeded (success_date) values ('2019-01-03')
+insert into Succeeded (success_date) values ('2019-01-06')
+
+select * from Failed
+select * from Succeeded;
+
+with cte1 as (
+select fail_date as date , 'Failed' as status from Failed
+union all
+select success_date as date, 'Succeeded' as status from Succeeded )
+,cte2 as (
+select date ,status ,DATEADD(DAY, - ROW_NUMBER() Over(partition by status order by date), date) date_flag
+from cte1
+where date > = '2019-01-01' )
+select  status, min(date) as startDate, max(date) as MaxDate
+from cte2
+group by date_flag , status
+order by startDate
+
+---------------------------------------------------------------------------------------------------------------------------
