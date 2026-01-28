@@ -1,4 +1,4 @@
---LeetCode Hard 615 Average Salary: Departments VS Company (mark higher, lower and same)
+﻿--LeetCode Hard 615 Average Salary: Departments VS Company (mark higher, lower and same)
 
 CREATE TABLE Employee (
     emp_id INT,
@@ -212,7 +212,7 @@ and count(*) > 1  -- exclude if you have only one record
 
 -----------------------------------------------------------------------------------------------
 
--- LeetCode Hard 2199 Facebook �Finding the Topic of Each Post"
+-- LeetCode Hard 2199 Facebook “Finding the Topic of Each Post"
 
 CREATE TABLE Topics (
     topic_id INT ,
@@ -262,7 +262,7 @@ from cte1
 group by post_id;
 
 -----------------------------------------------------------------------------------------------
---  YAHOO LeetCode Hard 1412 �Quiet Students in All Exams"
+--  YAHOO LeetCode Hard 1412 “Quiet Students in All Exams"
 /* 
 Never got the highest score
 Never got the lowest score
@@ -352,7 +352,7 @@ ORDER BY s.student_id;
 
 -------------------------------------------------------------------------------------------------------------
 
--- LeetCode Hard 2362 �Generate the Invoice"
+-- LeetCode Hard 2362 “Generate the Invoice"
 Create table  Products (product_id int, price int)
 Create table  Purchases (invoice_id int, product_id int, quantity int)
 
@@ -366,7 +366,7 @@ insert into Purchases (invoice_id, product_id, quantity) values ('2', '1', '4')
 insert into Purchases (invoice_id, product_id, quantity) values ('4', '1', '10')
 
 /* 
-Total price of an invoice = sum of (quantity � price) for all products in that invoice.
+Total price of an invoice = sum of (quantity × price) for all products in that invoice.
 If two or more invoices tie for the highest price, return the one with the smallest invoice_id. 
 */
 
@@ -428,7 +428,7 @@ JOIN Products pr
 
 
 ------------------------------------------------------------------------------------------------------------------
--- GOOGLE LeetCode Hard 1767 �Subtasks That Did Not Execute" Interview SQL Question Explanation | EDS
+-- GOOGLE LeetCode Hard 1767 “Subtasks That Did Not Execute" Interview SQL Question Explanation | EDS
 Create table  Tasks (task_id int, subtasks_count int)
 Create table  Executed (task_id int, subtask_id int)
 Truncate table Tasks
@@ -538,3 +538,364 @@ group by date_flag , status
 order by startDate
 
 ---------------------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 3057 - Employees Project Allocation
+Create table Project (project_id int, employee_id int, workload int)
+Create table Employees (employee_id int, name varchar(20), team varchar(20))
+
+insert into Project (project_id, employee_id, workload) values ('1', '1', '45')
+insert into Project (project_id, employee_id, workload) values ('1', '2', '90')
+insert into Project (project_id, employee_id, workload) values ('2', '3', '12')
+insert into Project (project_id, employee_id, workload) values ('2', '4', '68')
+
+insert into Employees (employee_id, name, team) values ('1', 'Khaled', 'A')
+insert into Employees (employee_id, name, team) values ('2', 'Ali', 'B')
+insert into Employees (employee_id, name, team) values ('3', 'John', 'B')
+insert into Employees (employee_id, name, team) values ('4', 'Doe', 'A')
+
+select * from Project
+select * from Employees;
+
+-- find employee who's workload is grater than the avg workload of their corrospoding team
+with cte1 as (
+select t1.employee_id, name, team, workload, avg(cast(workload as float)) over(partition by team) as avg_value
+from Project t1
+join Employees t2 on t1.employee_id = t2.employee_id )
+select *
+from cte1
+where workload > avg_value
+order by employee_id
+
+-------------------------------------------------------------------------------------------------------------------
+
+--  Leetcode HARD 2793 - Status of Flight Ticket 
+Create table  Flights(flight_id int,capacity int)
+Create table  Passengers (passenger_id int,flight_id int,booking_time datetime)
+Truncate table Flights
+insert into Flights (flight_id, capacity) values ('1', '2')
+insert into Flights (flight_id, capacity) values ('2', '2')
+insert into Flights (flight_id, capacity) values ('3', '1')
+Truncate table Passengers
+insert into Passengers (passenger_id, flight_id, booking_time) values ('101', '1', '2023-07-10 16:30:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('102', '1', '2023-07-10 17:45:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('103', '1', '2023-07-10 12:00:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('104', '2', '2023-07-05 13:23:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('105', '2', '2023-07-05 09:00:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('106', '3', '2023-07-08 11:10:00')
+insert into Passengers (passenger_id, flight_id, booking_time) values ('107', '3', '2023-07-08 09:10:00')
+
+-- find the confimed and waiting customer based on the capacity based on the booking_time
+select * From Flights ;
+
+with cte1 as (
+select *, ROW_NUMBER() over(partition by flight_id order by booking_time) rn
+from Passengers )
+select  t1.passenger_id, case when rn <= capacity then 'confirmed' else 'waiting' end flag
+from cte1 t1 
+join Flights t2 on t1.flight_id = t2.flight_id
+order by t1.passenger_id
+
+-----------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 1159 - Market Analysis II
+Create table  Users2 (user_id int, join_date date, favorite_brand varchar(10))
+Create table  Orders2 (order_id int, order_date date, item_id int, buyer_id int, seller_id int)
+Create table  Items2 (item_id int, item_brand varchar(10))
+
+insert into Users2 (user_id, join_date, favorite_brand) values ('1', '2019-01-01', 'Lenovo')
+insert into Users2 (user_id, join_date, favorite_brand) values ('2', '2019-02-09', 'Samsung')
+insert into Users2 (user_id, join_date, favorite_brand) values ('3', '2019-01-19', 'LG')
+insert into Users2 (user_id, join_date, favorite_brand) values ('4', '2019-05-21', 'HP')
+
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('1', '2019-08-01', '4', '1', '2')
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('2', '2019-08-02', '2', '1', '3')
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('3', '2019-08-03', '3', '2', '3')
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('4', '2019-08-04', '1', '4', '2')
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('5', '2019-08-04', '1', '3', '4')
+insert into Orders2 (order_id, order_date, item_id, buyer_id, seller_id) values ('6', '2019-08-05', '2', '2', '4')
+
+insert into Items2 (item_id, item_brand) values ('1', 'Samsung')
+insert into Items2 (item_id, item_brand) values ('2', 'Lenovo')
+insert into Items2 (item_id, item_brand) values ('3', 'LG')
+insert into Items2 (item_id, item_brand) values ('4', 'HP')
+
+/* find if the brand of the second item they sold equal to their favorite brand?
+if user didn't sold less than 1 item then no */
+select * from Users2
+select * from Orders2
+select * from items2;
+
+with cte1 as (
+select  * , ROW_NUMBER() over(partition by seller_id order by order_date) rk1
+from Orders2)
+select user_id,
+case when t3.item_brand <> t1.favorite_brand or t2.order_id is null then 'no'
+else 'yes' end as status
+from Users2 t1
+left join cte1 t2 on t1.user_id = t2.seller_id and rk1 = 2
+left join items2 t3 on t2.item_id = t3.item_id
+order by user_id
+
+----------------------------------------------------------------------------------------------------------
+-- Leetcode HARD 1194 - Tournament Winners MULTI-COLUMN JOIN TRICK
+
+Create table  Players2 (player_id int, group_id int)
+Create table  Matches2 (match_id int, first_player int, second_player int, first_score int, second_score int)
+
+Truncate table Players
+insert into Players2 (player_id, group_id) values ('10', '2')
+insert into Players2 (player_id, group_id) values ('15', '1')
+insert into Players2 (player_id, group_id) values ('20', '3')
+insert into Players2 (player_id, group_id) values ('25', '1')
+insert into Players2 (player_id, group_id) values ('30', '1')
+insert into Players2 (player_id, group_id) values ('35', '2')
+insert into Players2 (player_id, group_id) values ('40', '3')
+insert into Players2 (player_id, group_id) values ('45', '1')
+insert into Players2 (player_id, group_id) values ('50', '2')
+Truncate table Matches
+insert into Matches2 (match_id, first_player, second_player, first_score, second_score) values ('1', '15', '45', '3', '0')
+insert into Matches2 (match_id, first_player, second_player, first_score, second_score) values ('2', '30', '25', '1', '2')
+insert into Matches2 (match_id, first_player, second_player, first_score, second_score) values ('3', '30', '15', '2', '0')
+insert into Matches2 (match_id, first_player, second_player, first_score, second_score) values ('4', '40', '20', '5', '2')
+insert into Matches2 (match_id, first_player, second_player, first_score, second_score) values ('5', '35', '50', '1', '1')
+
+
+/* For each group, find the player who has the highest total score.
+Rules:
+1. Score = sum of all points scored in matches
+2. If tie → choose smallest player_id
+3. Every group must return exactly one winner   */
+
+select * From Players2
+select * from Matches2 ;
+
+with cte1 as (
+select first_player player, first_score score 
+from Matches2
+union all
+select second_player player, second_score score
+from Matches2 )
+,cte2 as (
+select player, sum(score) total_score
+from cte1 
+group by player )
+,cte3 as (
+select t2.group_id, t1.player, 
+ROW_NUMBER() over(partition by group_id order by total_score desc , t1.player) rk1
+from cte2 t1 
+join Players2 t2 on t1.player = t2.player_id )
+select group_id, player
+from cte3
+where rk1 = 1
+
+-- using multiple column join trick 
+
+select * From Players2
+select * from Matches2 ;
+
+with cte1 as (
+select t1.player_id , t1.group_id, 
+ sum (case when t1.player_id = t2.first_player then first_score
+when t1.player_id = t2.second_player then second_score end ) as total_score 
+from Players2 t1
+left join Matches2  t2 on t1.player_id = t2.first_player or t1.player_id = t2.second_player
+group by t1.player_id , t1.group_id )
+,cte2 as (
+select * , 
+ROW_NUMBER() over(partition by group_id order by total_score desc, player_id ) rk1
+from cte1 )
+select group_id, player_id
+from cte2
+where rk1 = 1
+
+
+-------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 1972 - First & Last Call on Same Day
+Create table  Calls (caller_id int, recipient_id int, call_time datetime)
+Truncate table Calls
+insert into Calls (caller_id, recipient_id, call_time) values ('8', '4', '2021-08-24 17:46:07')
+insert into Calls (caller_id, recipient_id, call_time) values ('4', '8', '2021-08-24 19:57:13')
+insert into Calls (caller_id, recipient_id, call_time) values ('5', '1', '2021-08-11 05:28:44')
+insert into Calls (caller_id, recipient_id, call_time) values ('8', '3', '2021-08-17 04:04:15')
+insert into Calls (caller_id, recipient_id, call_time) values ('11', '3', '2021-08-17 13:07:00')
+insert into Calls (caller_id, recipient_id, call_time) values ('8', '11', '2021-08-17 22:22:22');
+ -- note :- (caller_id, recipient_id) - PK
+/*
+Find user_ids such that:
+On at least one day,
+the first call and the last call of that day
+were made to the same person.
+⚠️ Important:
+Calls can be incoming or outgoing
+Caller OR recipient → both count as “calls of that user” */
+
+select * from Calls;
+
+
+/* note :- this will give those user where first and last call happened between same user on particular day,
+but we need to find those users whos first and last call with each other in same day*/
+
+with cte1 as (
+select * , 
+ROW_NUMBER() over(partition by cast (call_time as date) order by call_time) rk1,  -- first call on that day
+ROW_NUMBER() over(partition by cast (call_time as date) order by call_time desc) rk2 -- last call on that day
+from Calls)
+,cte2 as (
+select *
+from cte1 
+where rk1 =1 or rk2 = 1 )
+ ,cte3 as (
+select caller_id, cast(call_time as date) call_date
+from cte2 
+union all 
+select recipient_id, cast(call_time as date) call_date
+from cte2 )
+,cte4 as (
+select  call_date, 
+count(distinct caller_id)  dist_count
+from cte3 
+group by call_date )
+select distinct caller_id
+from cte3 t1
+join cte4 t2 on t1.call_date = t2.call_date and dist_count = 2;
+
+--  this will give the user who has first and last call with same user on any of the day
+with cte1 as (
+select * from Calls
+union all 
+select recipient_id, caller_id, call_time from Calls )
+,cte2 as (
+select * , FIRST_VALUE(recipient_id) over(partition by caller_id, cast (call_time as date) order by call_time asc) first_call,
+FIRST_VALUE(recipient_id) over(partition by caller_id, cast (call_time as date) order by call_time desc) last_call
+from cte1 )
+select  distinct caller_id
+from cte2
+where first_call = last_call;
+
+---------------------------------------------------------------------------------------------------------------
+Create table  Matches1 (player_id int, match_day date, result varchar(100))
+Truncate table Matches1
+insert into Matches1 (player_id, match_day, result) values ('1', '2022-01-17', 'Win')
+insert into Matches1 (player_id, match_day, result) values ('1', '2022-01-18', 'Win')
+insert into Matches1 (player_id, match_day, result) values ('1', '2022-01-25', 'Win')
+insert into Matches1 (player_id, match_day, result) values ('1', '2022-01-31', 'Draw')
+insert into Matches1 (player_id, match_day, result) values ('1', '2022-02-08', 'Win')
+insert into Matches1 (player_id, match_day, result) values ('2', '2022-02-06', 'Lose')
+insert into Matches1 (player_id, match_day, result) values ('2', '2022-02-08', 'Lose')
+insert into Matches1 (player_id, match_day, result) values ('3', '2022-03-30', 'Win')
+
+select * from Matches1;
+-- find highest win strik by user
+
+with cte2 as (
+select * ,  ROW_NUMBER() over(partition by player_id order by match_day) rk
+from Matches1
+ )
+,cte3 as (
+select *,dateadd(day,rk, '9999-01-01') con_day   -- add dummy '9999-01-01' to get the continuose date
+from cte2 )
+,cte4 as (
+select *,DATEADD(day, - ROW_NUMBER() over(partition by player_id, result order by con_day), con_day) cons_date
+from cte3)
+ , cte5 as (
+select  player_id, result, cons_date,count(*) count_result -- count of strik
+, row_number() over(partition by player_id order by count(*) desc)   rk  -- to get the rank based on highest strik
+from cte4
+where result = 'Win'
+group by  player_id, result, cons_date )
+select  distinct t1.player_id, isnull(count_result ,0)
+from Matches1 t1  -- to get all player_id
+left join (select * from cte5 where rk = 1) t2 on t1.player_id = t2.player_id;
+
+
+with cte1 as (
+select *,
+ROW_NUMBER() over(partition by player_id order by match_day) rk1,   -- use to get the continuose days 
+ROW_NUMBER() over(partition by player_id ,result order by  match_day) rk2  -- use to get the continuose days
+from Matches1 )
+,cte2 as (
+select player_id,rk1- rk2 diff_day, count(rk1- rk2) count_win,
+ROW_NUMBER() over(partition by player_id order by count(rk1- rk2) desc) rk
+from cte1
+where result = 'win'
+group by player_id , rk1- rk2 )
+select distinct t1.player_id, isnull(t2.count_win,0)
+from Matches1 t1
+left join (select * from cte2 where rk = 1) t2 on t1.player_id = t2.player_id
+
+---------------------------------------------------------------------------------------------------------------------
+-- Leetcode HARD 2474 - Customers with Strictly Increasing Purchase
+-- for any year order is not placed consider it as 0 
+Create table Orders1 (order_id int, customer_id int, order_date date, price int)
+Truncate table Orders
+insert into Orders1 (order_id, customer_id, order_date, price) values ('1', '1', '2019-07-01', '1100')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('2', '1', '2019-11-01', '1200')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('3', '1', '2020-05-26', '3000')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('4', '1', '2021-08-31', '3100')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('5', '1', '2022-12-07', '4700')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('6', '2', '2015-01-01', '700')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('7', '2', '2017-11-07', '1000')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('8', '3', '2017-01-01', '900')
+insert into Orders1 (order_id, customer_id, order_date, price) values ('9', '3', '2018-11-07', '900');
+
+with cte1 as (
+select customer_id,YEAR(order_date) year_no , sum(price) sum_price From Orders1
+group by customer_id,YEAR(order_date) )
+, cte2 as (select customer_id, min(year(order_date)) min_year, max(year(order_date)) max_year  
+ from Orders1 
+ group by customer_id
+ union all
+ select customer_id, min_year + 1 , max_year
+ from cte2
+ where min_year < max_year)
+ , cte3 as (
+ select t1.customer_id, t1.min_year
+ --, isnull(sum_price,0),
+ -- LEAD(isnull(sum_price,0)) over(partition by t1.customer_id order by t1.min_year),
+ ,case 
+ when isnull(sum_price,0) < LEAD(isnull(sum_price,0)) over(partition by t1.customer_id order by t1.min_year) 
+ or LEAD(isnull(sum_price,0)) over(partition by t1.customer_id order by t1.min_year) is null then 1 
+ else 0  end as flag
+ from cte2  t1 
+ left join cte1 t2 on t1.customer_id = t2.customer_id and t1.min_year  = t2.year_no )
+ select  distinct customer_id
+from cte3
+WHERE customer_id NOT IN (select customer_id from cte3 where flag = 0 );
+
+-- youtube solution 
+with cte1 as (
+select customer_id
+, year(order_date) year_no 
+, sum(price) total_price
+, max(year(order_date)) over(partition by customer_id) - min(year(order_date)) over(partition by customer_id) + 1 num_yr
+, DENSE_RANK() over(partition by customer_id order by year(order_date)) rnk_year
+, DENSE_RANK() over(partition by customer_id order by sum(price)) rnk_price
+-- ,count( year(order_date) ) over(partition by customer_id )
+from Orders1
+group by customer_id, year(order_date))
+select customer_id
+from cte1
+group by customer_id
+having sum(case when rnk_price = rnk_year then 1 else 0 end ) = max(num_yr)
+
+-------------------------------------------------------------------------------------------------------------------------
+-- Leetcode HARD 3214 - Year on Year Growth Rate
+Create Table  user_transactions( transaction_id int, product_id int, spend decimal(10,2), 
+transaction_date datetime)
+Truncate table user_transactions
+insert into user_transactions (transaction_id, product_id, spend, transaction_date) values ('1341', '123424', '1500.6', '2019-12-31 12:00:00')
+insert into user_transactions (transaction_id, product_id, spend, transaction_date) values ('1423', '123424', '1000.2', '2020-12-31 12:00:00')
+insert into user_transactions (transaction_id, product_id, spend, transaction_date) values ('1623', '123424', '1246.44', '2021-12-31 12:00:00')
+insert into user_transactions (transaction_id, product_id, spend, transaction_date) values ('1322', '123424', '2145.32', '2022-12-31 12:00:00')
+
+
+select product_id, YEAR(transaction_date) , 
+lag(sum(spend)) over(partition by product_id order by YEAR(transaction_date))  previose_year,
+sum(spend) current_year,
+(( sum(spend) - lag(sum(spend)) over(partition by product_id order by YEAR(transaction_date))) / 
+lag(sum(spend)) over(partition by product_id order by YEAR(transaction_date)) ) * 100
+from user_transactions
+group by product_id, YEAR(transaction_date) 
+
+--------------------------------------------------------------------------------------------------------------
