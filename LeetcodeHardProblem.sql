@@ -899,3 +899,217 @@ from user_transactions
 group by product_id, YEAR(transaction_date) 
 
 --------------------------------------------------------------------------------------------------------------
+-- check right-angled tringle
+-- not leetcode
+CREATE TABLE Triangles (
+    id INT PRIMARY KEY,
+    a INT,
+    b INT,
+    c INT
+);
+
+INSERT INTO Triangles (id, a, b, c) VALUES
+-- ✅ Right-angled (Pythagoras)
+(1, 3, 4, 5),
+(2, 5, 12, 13),
+(3, 6, 8, 10),
+
+-- ❌ Not right-angled
+(4, 4, 5, 6),
+(5, 2, 3, 4),
+
+-- 🔁 Unordered sides (still right-angled)
+(6, 5, 3, 4),
+(7, 13, 5, 12),
+
+-- ⚠️ Degenerate / invalid triangle
+(8, 1, 2, 3),
+(9, 0, 4, 5),
+(10, -3, 4, 5);
+
+SELECT  * 
+FROM Triangles
+WHERE a > 0 AND b > 0 AND c > 0 and
+   (
+        SQUARE(a) = SQUARE(b) + SQUARE(c)
+     OR SQUARE(b) = SQUARE(a) + SQUARE(c)
+     OR SQUARE(c) = SQUARE(a) + SQUARE(b)
+  )
+  -- to check valid trangle
+  AND a + b > c 
+  AND a + c > b
+  AND b + c > a;
+
+-- get the least and greatest site 
+SELECT id
+FROM (
+    SELECT
+        id,
+        a, b, c,
+        GREATEST(a, b, c) AS hyp,
+        a + b + c - GREATEST(a, b, c) AS sum_other,
+        LEAST(a, b, c) AS side1
+    FROM Triangles
+    WHERE a > 0 AND b > 0 AND c > 0
+) t
+WHERE
+    side1 * side1
+    + (sum_other - side1) * (sum_other - side1)
+    = hyp * hyp
+AND side1 + (sum_other - side1) > hyp;
+
+-------------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 3052 - Maximize Items 
+Create table  Inventory ( item_id int, item_type varchar(50), item_category varchar(50), square_footage decimal(10,2))
+Truncate table Inventory
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('1374', 'prime_eligible', 'Watches', '68.0')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('4245', 'not_prime', 'Art', '26.4')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('5743', 'prime_eligible', 'Software', '325.0')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('8543', 'not_prime', 'Clothing', '64.5')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('2556', 'not_prime', 'Shoes', '15.0')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('2452', 'prime_eligible', 'Scientific', '85.0')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('3255', 'not_prime', 'Furniture', '22.6')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('1672', 'prime_eligible', 'Beauty', '8.5')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('4256', 'prime_eligible', 'Furniture', '55.5')
+insert into Inventory (item_id, item_type, item_category, square_footage) values ('6325', 'prime_eligible', 'Food', '13.2')
+
+-- space available 500000
+-- first find for prime_eligible and after find out how many not_prime item can fit in remaining space
+-- item should be integer 
+
+with cte1 as (
+select item_type
+, sum(square_footage) sum_footage
+, count(item_id) no_item
+, floor(500000/sum(square_footage)) * count(item_id) no_of_item
+, floor(500000/sum(square_footage)) max_comb
+From Inventory
+group by item_type )
+select item_type, 
+case 
+when item_type = 'prime_eligible' then no_of_item 
+else floor((500000 -  (select max_comb * sum_footage from cte1 where item_type = 'prime_eligible'  ) ) 
+/ (select sum_footage from cte1  where item_type= 'not_prime')) * no_item    end
+from cte1
+
+-------------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 2991 - Top Three Wineries 
+Create table  Wineries ( id int, country varchar(60), points int, winery varchar(60))
+Truncate table Wineries
+insert into Wineries (id, country, points, winery) values ('103', 'Australia', '84', 'WhisperingPines')
+insert into Wineries (id, country, points, winery) values ('737', 'Australia', '85', 'GrapesGalore')
+insert into Wineries (id, country, points, winery) values ('848', 'Australia', '100', 'HarmonyHill')
+insert into Wineries (id, country, points, winery) values ('222', 'Hungary', '60', 'MoonlitCellars')
+insert into Wineries (id, country, points, winery) values ('116', 'USA', '47', 'RoyalVines')
+insert into Wineries (id, country, points, winery) values ('124', 'USA', '45', 'EaglesNest')
+insert into Wineries (id, country, points, winery) values ('648', 'India', '69', 'SunsetVines')
+insert into Wineries (id, country, points, winery) values ('894', 'USA', '39', 'RoyalVines')
+insert into Wineries (id, country, points, winery) values ('677', 'USA', '9', 'PacificCrest');
+
+/* find top 3 winery based on point if two winery is having same point order by winery name 
+if second winery not present mark it as No second winery 
+if third winery not present mark it as 'No Third Winery'     */
+
+with Wineries_cte as (
+select country,winery,sum(points) as points 
+from Wineries
+group by country,winery )
+, cte1 as (
+select * 
+, ROW_NUMBER() over(partition by country order by points desc, winery) rk
+from Wineries_cte )
+select country, 
+max(case when rk = 1 then concat(winery, ' (',points,')') else null end ) top_winery ,
+isnull(max(case when rk = 2 then concat(winery, ' (',points,')') else null end), 'No second winery') second_winery,
+isnull(max(case when rk = 3 then concat(winery, ' (',points,')') else null end) , 'No Third winery') third_winer
+from cte1 
+where rk <= 3
+group by country
+order by country
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+drop table if exists Trips
+drop table if exists Users
+Create table  Trips (id int, client_id int, driver_id int, city_id int, status varchar(100), request_at varchar(50))
+Create table  Users (users_id int, banned varchar(50), role varchar(100))
+Truncate table Trips
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('1', '1', '10', '1', 'completed', '2013-10-01')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('2', '2', '11', '1', 'cancelled_by_driver', '2013-10-01')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('3', '3', '12', '6', 'completed', '2013-10-01')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('4', '4', '13', '6', 'cancelled_by_client', '2013-10-01')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('5', '1', '10', '1', 'completed', '2013-10-02')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('6', '2', '11', '6', 'completed', '2013-10-02')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('7', '3', '12', '6', 'completed', '2013-10-02')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('8', '2', '12', '12', 'completed', '2013-10-03')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('9', '3', '10', '12', 'completed', '2013-10-03')
+insert into Trips (id, client_id, driver_id, city_id, status, request_at) values ('10', '4', '13', '12', 'cancelled_by_driver', '2013-10-03')
+Truncate table Users
+insert into Users (users_id, banned, role) values ('1', 'No', 'client')
+insert into Users (users_id, banned, role) values ('2', 'Yes', 'client')
+insert into Users (users_id, banned, role) values ('3', 'No', 'client')
+insert into Users (users_id, banned, role) values ('4', 'No', 'client')
+insert into Users (users_id, banned, role) values ('10', 'No', 'driver')
+insert into Users (users_id, banned, role) values ('11', 'No', 'driver')
+insert into Users (users_id, banned, role) values ('12', 'No', 'driver')
+insert into Users (users_id, banned, role) values ('13', 'No', 'driver')
+
+
+select * From  Trips
+select * From  Users;
+
+-- find out the cancellation rate for the trips where client and driver should not banned 
+-- cancellation rate is total trips divided by the canclelled trip 
+-- take trips between '2013-10-01' and '2013-10-03'
+
+select request_at
+, cast(sum(case when status = 'cancelled_by_client' or status = 'cancelled_by_driver' then 1 else 0 end) as float)  /cast(count(id) as float)  cancellation_rate
+, sum(case when status = 'completed' then 1 else 0 end) completed
+, sum(case when status = 'cancelled_by_client' or status = 'cancelled_by_driver' then 1 else 0 end) canclelled
+From  Trips
+where client_id not in (select users_id From  Users where banned = 'Yes') -- here you can join the users table for both the client and driver and then banned = 'No'
+and  driver_id not in (select users_id From  Users where banned = 'Yes')
+and request_at between '2013-10-01' and '2013-10-03'
+group by request_at ; 
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Leetcode HARD 579 - Cumulative Salary of Employee
+Create table  Employee1 (id int, month int, salary int)
+Truncate table Employee1
+insert into Employee1 (id, month, salary) values ('1', '1', '20')
+insert into Employee1 (id, month, salary) values ('2', '1', '20')
+insert into Employee1 (id, month, salary) values ('1', '2', '30')
+insert into Employee1 (id, month, salary) values ('2', '2', '30')
+insert into Employee1 (id, month, salary) values ('3', '2', '40')
+insert into Employee1 (id, month, salary) values ('1', '3', '40')
+insert into Employee1 (id, month, salary) values ('3', '3', '60')
+insert into Employee1 (id, month, salary) values ('1', '4', '60')
+insert into Employee1 (id, month, salary) values ('3', '4', '70')
+insert into Employee1 (id, month, salary) values ('1', '7', '90')
+insert into Employee1 (id, month, salary) values ('1', '8', '90');
+
+
+with cte1 as (
+select id,1 as n ,  max(month)  max_month 
+from Employee1
+group by id
+union all
+select id, n + 1 , max_month 
+from cte1 
+where n < max_month)
+, cte2 as (
+select t1.id, t1.n , max_month ,  isnull(t2.salary , 0) as salary
+from cte1 t1 
+left join Employee1 t2 on t1.id = t2.id and t1.n = t2.month )
+,cte3 as (
+select *
+, sum(salary) over(partition by id order by n rows between 2 preceding and current row) sum_salary
+, ROW_NUMBER() OVER(PARTITION BY ID ORDER BY N DESC) rk
+from cte2)
+select * 
+from cte3
+where n  <>  max_month and salary <> 0
+order by id , n;
+
